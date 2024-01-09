@@ -13,6 +13,18 @@ def scrape_page(soup, code_details):
         for code_td in code_tds:
             details.append(code_td.text)
 
+        code = details[0]
+        gift = details[1]
+        expire_date = details[2]
+
+        code_details.append(
+            {
+                'code': code,
+                'gift': gift,
+                'expire_date': expire_date
+            }
+        )
+
 
 # the url of the home page of the target website
 base_url = 'https://www.nintendolife.com/guides/pokemon-scarlet-and-violet-mystery-gift-codes-list'
