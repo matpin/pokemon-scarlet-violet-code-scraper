@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import csv
 
 
 def scrape_page(soup, code_details):
@@ -42,3 +43,14 @@ soup = BeautifulSoup(page.text, 'html.parser')
 code_details = []
 
 scrape_page(soup, code_details)
+
+csv_file = open('codes.csv', 'w', encoding='utf-8', newline='')
+
+writer = csv.writer(csv_file)
+
+writer.writerow(['Code', 'Gift', 'Expire Date'])
+
+for code_detail in code_details:
+    writer.writerow(code_detail.values())
+
+csv_file.close()
