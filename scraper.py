@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 def scrape_page(soup, code_details):
     code_elements = soup.find_all('table')
 
+    code_rows = code_elements[0].find('tbody').find_all("tr")
+    for code_row in code_rows:
+        code_tds = code_row.find_all("td")
+
 
 # the url of the home page of the target website
 base_url = 'https://www.nintendolife.com/guides/pokemon-scarlet-and-violet-mystery-gift-codes-list'
