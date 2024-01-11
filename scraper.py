@@ -1,6 +1,18 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+from dotenv import load_dotenv, find_dotenv
+import os
+import pprint
+from pymongo import MongoClient
+load_dotenv(find_dotenv())
+
+uri = os.environ.get('MONGO_URI')
+
+client = MongoClient(uri)
+
+dbs = client.list_database_names()
+codes_db = client.codes
 
 
 def scrape_page(soup, code_details):
@@ -27,6 +39,30 @@ def scrape_page(soup, code_details):
         )
 
 
+collection = codes_db.codes
+
+
+def add_codes(codes):
+    if len(codes_keeper) == 0:
+        collection.insert_many(codes)
+    else:
+        print("No new codes")
+
+
+printer = pprint.PrettyPrinter()
+codes_keeper = []
+
+
+def get_codes(code_details):
+    # codes = collection.find()
+    # print(list(codes))
+
+    for code in code_details:
+        exist = collection.find_one({'code': code['code']})
+        codes_keeper.append(exist)
+        # print(exist)
+
+
 # the url of the home page of the target website
 base_url = 'https://www.nintendolife.com/guides/pokemon-scarlet-and-violet-mystery-gift-codes-list'
 
@@ -43,6 +79,8 @@ soup = BeautifulSoup(page.text, 'html.parser')
 code_details = []
 
 scrape_page(soup, code_details)
+get_codes(code_details)
+add_codes(code_details)
 
 csv_file = open('codes.csv', 'w', encoding='utf-8', newline='')
 
