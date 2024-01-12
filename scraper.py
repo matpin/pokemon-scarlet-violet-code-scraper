@@ -1,70 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from discord_webhook import DiscordWebhook, DiscordEmbed
-from dotenv import load_dotenv, find_dotenv
-import os
-from pymongo import MongoClient
-load_dotenv(find_dotenv())
-
-uri = os.environ.get('MONGO_URI')
-webhook_url = os.environ.get('WEBHOOK_URL')
-
-client = MongoClient(uri)
-
-dbs = client.list_database_names()
-codes_db = client.codes
-
-code_details = []
-collection = codes_db.codes
-
-
-def scrape_page(soup, code_details):
-    code_elements = soup.find_all('table')
-
-    code_rows = code_elements[0].find('tbody').find_all("tr")
-    for code_row in code_rows:
-        code_tds = code_row.find_all("td")
-
-        details = []
-        for code_td in code_tds:
-            details.append(code_td.text)
-
-        code = details[0]
-        gift = details[1]
-        expire_date = details[2]
-
-        existing_code = collection.find_one({"gift": gift})
-        if not existing_code:
-            code_details.append(
-                {
-                    'code': code,
-                    'gift': gift,
-                    'expire_date': expire_date
-                }
-            )
-
-
-def add_codes(codes):
-    if len(code_details) != 0:
-        collection.insert_many(codes)
-        webhook = DiscordWebhook(url=webhook_url)
-        embed = DiscordEmbed(title="New codes", color="03b2f8")
-        for code_info in code_details:
-            embed.add_embed_field(name=f'Code: {code_info["code"]}',
-                                  value=f'Gift: {code_info["gift"]}\nExpires on: {code_info["expire_date"]}',
-                                  inline=False)
-        webhook.add_embed(embed)
-        response = webhook.execute()
-    else:
-        print("No new codes")
-
-
-# def get_codes(code_details):
-#     for code in code_details:
-#         exist = collection.find_one({'gift': code['gift']})
-#         # print(exist)
-#         if exist is not None:
-#             codes_keeper.append(exist)
+from store import find_code
 
 
 # the url of the home page of the target website
@@ -80,6 +16,29 @@ page = requests.get(base_url, headers=headers)
 
 soup = BeautifulSoup(page.text, 'html.parser')
 
-scrape_page(soup, code_details)
-# get_codes(code_details)
-add_codes(code_details)
+
+def scrape_page():
+    code_elements = soup.find_all('table')
+    new_codes = []
+    code_rows = code_elements[0].find('tbody').find_all("tr")
+    for code_row in code_rows:
+        code_tds = code_row.find_all("td")
+
+        details = []
+        for code_td in code_tds:
+            details.append(code_td.text)
+
+        code = details[0]
+        gift = details[1]
+        expire_date = details[2]
+
+        existing_code = find_code({"gift": gift})
+        if not existing_code:
+            new_codes.append(
+                {
+                    'code': code,
+                    'gift': gift,
+                    'expire_date': expire_date
+                }
+            )
+    return new_codes
