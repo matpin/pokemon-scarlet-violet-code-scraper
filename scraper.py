@@ -50,7 +50,11 @@ def add_codes(codes):
     if len(code_details) != 0:
         collection.insert_many(codes)
         webhook = DiscordWebhook(url=webhook_url)
-        embed = DiscordEmbed(title="New codes", description="Go to site", color="03b2f8")
+        embed = DiscordEmbed(title="New codes", color="03b2f8")
+        for code_info in code_details:
+            embed.add_embed_field(name=f'Code: {code_info["code"]}',
+                                  value=f'Gift: {code_info["gift"]}\nExpires on: {code_info["expire_date"]}',
+                                  inline=False)
         webhook.add_embed(embed)
         response = webhook.execute()
     else:
