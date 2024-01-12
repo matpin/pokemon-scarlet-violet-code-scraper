@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+from discord_webhook import DiscordWebhook, DiscordEmbed
 from dotenv import load_dotenv, find_dotenv
 import os
 import pprint
@@ -8,11 +9,15 @@ from pymongo import MongoClient
 load_dotenv(find_dotenv())
 
 uri = os.environ.get('MONGO_URI')
+webhook_url = os.environ.get('WEBHOOK_URL')
 
 client = MongoClient(uri)
 
 dbs = client.list_database_names()
 codes_db = client.codes
+
+code_details = []
+collection = codes_db.codes
 
 
 def scrape_page(soup, code_details):
@@ -30,37 +35,34 @@ def scrape_page(soup, code_details):
         gift = details[1]
         expire_date = details[2]
 
-        code_details.append(
-            {
-                'code': code,
-                'gift': gift,
-                'expire_date': expire_date
-            }
-        )
-
-
-collection = codes_db.codes
+        existing_code = collection.find_one({"gift": gift})
+        if not existing_code:
+            code_details.append(
+                {
+                    'code': code,
+                    'gift': gift,
+                    'expire_date': expire_date
+                }
+            )
 
 
 def add_codes(codes):
-    if len(codes_keeper) == 0:
+    if len(code_details) != 0:
         collection.insert_many(codes)
+        webhook = DiscordWebhook(url=webhook_url)
+        embed = DiscordEmbed(title="New codes", description="Go to site", color="03b2f8")
+        webhook.add_embed(embed)
+        response = webhook.execute()
     else:
         print("No new codes")
 
 
-printer = pprint.PrettyPrinter()
-codes_keeper = []
-
-
-def get_codes(code_details):
-    # codes = collection.find()
-    # print(list(codes))
-
-    for code in code_details:
-        exist = collection.find_one({'code': code['code']})
-        codes_keeper.append(exist)
-        # print(exist)
+# def get_codes(code_details):
+#     for code in code_details:
+#         exist = collection.find_one({'gift': code['gift']})
+#         # print(exist)
+#         if exist is not None:
+#             codes_keeper.append(exist)
 
 
 # the url of the home page of the target website
@@ -76,10 +78,8 @@ page = requests.get(base_url, headers=headers)
 
 soup = BeautifulSoup(page.text, 'html.parser')
 
-code_details = []
-
 scrape_page(soup, code_details)
-get_codes(code_details)
+# get_codes(code_details)
 add_codes(code_details)
 
 csv_file = open('codes.csv', 'w', encoding='utf-8', newline='')
