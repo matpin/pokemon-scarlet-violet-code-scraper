@@ -1,10 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-import csv
 from discord_webhook import DiscordWebhook, DiscordEmbed
 from dotenv import load_dotenv, find_dotenv
 import os
-import pprint
 from pymongo import MongoClient
 load_dotenv(find_dotenv())
 
@@ -85,14 +83,3 @@ soup = BeautifulSoup(page.text, 'html.parser')
 scrape_page(soup, code_details)
 # get_codes(code_details)
 add_codes(code_details)
-
-csv_file = open('codes.csv', 'w', encoding='utf-8', newline='')
-
-writer = csv.writer(csv_file)
-
-writer.writerow(['Code', 'Gift', 'Expire Date'])
-
-for code_detail in code_details:
-    writer.writerow(code_detail.values())
-
-csv_file.close()
